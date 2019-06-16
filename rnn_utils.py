@@ -9,6 +9,7 @@ import numpy as np
 import pickle
 from pprint import pprint
 
+from config import *
 
 def get_data(input_data_dump, num_frames_per_video, labels, ifTrain, gesture_folder):
     """Get the data from our saved predictions or pooled features."""
@@ -86,7 +87,7 @@ def get_data(input_data_dump, num_frames_per_video, labels, ifTrain, gesture_fol
                 #is_save = True
                 is_clear = True
 
-            if count_frame == 20:
+            if count_frame == FRAMES_PER_VIDEO:
                 is_save = True
 
             if is_save:

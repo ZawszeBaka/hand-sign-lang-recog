@@ -5,11 +5,12 @@ from os.path import join, exists
 
 import handsegment as hs
 import argparse
+import numpy as np
 from tqdm import tqdm
 
+from config import *
+
 hc = []
-STEP = 2
-SIZE = (280, 300)
 
 def convert(gesture_folder, target_folder):
     
@@ -36,7 +37,6 @@ def convert(gesture_folder, target_folder):
         for video in videos:
             name = gesture_folder + '/' + gesture + '/' + video
             cap = cv2.VideoCapture(name)  # capturing input video
-            lastFrame = None
             property_id = int(cv2.CAP_PROP_FRAME_COUNT) 
             length = int(cv2.VideoCapture.get(cap, property_id))
             #print('Video %s has %d frames'%(video, length))
@@ -53,26 +53,36 @@ def convert(gesture_folder, target_folder):
 
             _id = 0
 
-            count = 0
+            STEP = int(length / FRAMES_PER_VIDEO)
+            if STEP == 0:
+                continue
+
+            t = np.arange(0, length, length/FRAMES_PER_VIDEO)
+            t = t.astype(int)
+
+            unique, counts = np.unique(t, return_counts=True)
+            counts = dict(zip(unique, counts))
+
+            saved_frames = 0
                     
             while True:
                 ret, frame = cap.read()  # extract frame
+                
                 if ret is False:
-                    info[gesture].append(_id)
+                    info[gesture].append(saved_frames)
+                    print(saved_frames)
                     break
 
-                count += 1
-                if count % STEP == 0:
-                    count = 0
+                if np.isin(_id, t):
+                    for i in range(counts[_id]):
+                        saved_frames += 1
+                        frame_url = target_folder + '/' + gesture + '/' + video + "_frame_" + str(saved_frames) + ".jpeg"
+                        frame = hs.handsegment(frame)
+                        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                        frame = cv2.resize(frame, SIZE)
+                        cv2.imwrite(frame_url, frame)
 
-                    _id += 1
-
-                    frame_url = target_folder + '/' + gesture + '/' + video + "_frame_" + str(_id) + ".jpeg"
-
-                    frame = hs.handsegment(frame)
-                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                    frame = cv2.resize(frame, SIZE)
-                    cv2.imwrite(frame_url, frame)
+                _id += 1
 
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
