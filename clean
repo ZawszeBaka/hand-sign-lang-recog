@@ -1,1 +1,3 @@
-rm -rf bottlenecks train_frames test_frames
+rm -rf bottlenecks train_frames test_frames checkpoints training_summaries
+rm predicted-frames-final_result-test.pkl predicted-frames-final_result-train.pkl
+rm train_videos_info.pickle test_videos_info.pickle
