@@ -1,0 +1,1 @@
+rm -rf bottlenecks train_frames test_frames
