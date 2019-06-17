@@ -11,7 +11,7 @@ from pprint import pprint
 
 from config import *
 
-def get_data(input_data_dump, num_frames_per_video, labels, ifTrain, gesture_folder):
+def get_data(input_data_dump, num_frames_per_video, labels, ifTrain, gesture_folder, is_predict):
     """Get the data from our saved predictions or pooled features."""
 
     # Local vars.
@@ -19,28 +19,23 @@ def get_data(input_data_dump, num_frames_per_video, labels, ifTrain, gesture_fol
     y = []
     temp_list = deque()
 
-    with open(gesture_folder + '_info.pickle', 'rb') as f:
-        info = pickle.load(f)
-
-    pprint(info)
+    NUM_DATA_PER_VIDEOS = int(FRAMES_PER_VIDEO / batch_size + 1)
 
     # Open and get the features.
     with open(input_data_dump, 'rb') as fin:
         frames = pickle.load(fin)
 
-        save_actual = labels[frames[0][1].lower()]
-        no_frames = len(frames)
-        count_label = 0
+        print('DEBUG: len frames', len(frames))
+        print('LABELS', labels)
 
-        video_id = 0
-        if len(info[frames[0][1]]) > 1 :
-            video_len = info[frames[0][1]][video_id] 
-        else:
-            video_len = 100000000000
+        if not is_predict:
+            save_actual = labels[frames[0][1].lower()]
+            no_frames = len(frames)
+            count_label = 0
+            print('INIT: save actual', save_actual)
+
         count_frame = 0
 
-        print('INIT: save actual', save_actual)
-        print('INIT: video len', video_len)
 
         for i, frame in enumerate(frames):
 
@@ -48,47 +43,19 @@ def get_data(input_data_dump, num_frames_per_video, labels, ifTrain, gesture_fol
             actual = frame[1] # string label
 
             # Convert our labels into binary.
-            actual = labels[actual.lower()]
+            if not is_predict:
+                actual = labels[actual.lower()]
 
-            count_label += 1
+            # count_label += 1
             count_frame += 1
 
             is_save = False
             is_clear = False
 
-            if save_actual != actual or i == no_frames-1:              
-                # for counting no of frames per label
-                print('Label: ', save_actual, ', no of frames: ' , count_label)
-                count_label = 0
-                save_actual = actual
-
-                # save status
-                #is_save = True
-                is_clear = True
-
-                # reset video_id , switch to next video in next label
-                video_id = 0
-                video_len = info[frame[1]][video_id]
-
-                # reset count frames
-                count_frame = 0
-
-
-            if count_frame == video_len : 
-                video_id += 1
-                video_len = info[frame[1]][video_id]
-                if video_id == len(info[frame[1]]) - 1:
-                    video_len = 1000000000 # get until end of label
-
-                # reset count frames
-                count_frame = 0
-
-                # save status
-                #is_save = True
-                is_clear = True
-
-            if count_frame == FRAMES_PER_VIDEO:
+            if count_frame == NUM_DATA_PER_VIDEOS:
                 is_save = True
+                is_clear = True
+                count_frame = 0
 
             if is_save:
                 # end of video
@@ -96,7 +63,8 @@ def get_data(input_data_dump, num_frames_per_video, labels, ifTrain, gesture_fol
                     temp_list.append(features)
                 flat = list(temp_list)
                 X.append(np.array(flat))
-                print('\n[DEBUG] shape X', np.array(temp_list).shape, ' video id', video_id , ' label', actual)
+                if not is_predict:
+                    print('\n[DEBUG] shape X', np.array(temp_list).shape, ' label', actual)
                 #X.append(np.array(temp_list))
                 # pprint(temp_list)
                 y.append(actual)
@@ -119,7 +87,8 @@ def get_data(input_data_dump, num_frames_per_video, labels, ifTrain, gesture_fol
     print("y shape: ", y.shape)
 
     # One-hot encoded categoricals.
-    y = to_categorical(y, len(labels))
+    if not is_predict:
+        y = to_categorical(y, len(labels))
 
     # Split into train and test.
     if ifTrain:

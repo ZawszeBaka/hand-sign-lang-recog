@@ -23,7 +23,7 @@ def load_labels(label_file):
 
 def main(input_data_dump, num_frames_per_video, batch_size, labels, model_file):
     # Get our data.
-    X_train, X_test, y_train, y_test = get_data(input_data_dump, num_frames_per_video, labels, True, 'train_videos')
+    X_train, X_test, y_train, y_test = get_data(input_data_dump, num_frames_per_video, labels, True, 'train_videos', False)
 
     print('X_train shape', X_train.shape)
     print('X_test shape', X_test.shape)
@@ -66,7 +66,7 @@ if __name__ == '__main__':
 
     labels = load_labels(args.label_file)
     input_data_dump = args.input_file_dump
-    num_frames_per_video = FRAMES_PER_VIDEO # 201
+    num_frames_per_video = int(FRAMES_PER_VIDEO / batch_size + 1) # 201
     batch_size = args.batch_size
     model_file = args.model_file
 

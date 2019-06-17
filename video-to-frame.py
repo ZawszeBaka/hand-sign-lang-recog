@@ -74,13 +74,13 @@ def convert(gesture_folder, target_folder):
                     break
 
                 if np.isin(_id, t):
-                    for i in range(counts[_id]):
-                        saved_frames += 1
-                        frame_url = target_folder + '/' + gesture + '/' + video + "_frame_" + str(saved_frames) + ".jpeg"
-                        frame = hs.handsegment(frame)
-                        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-                        frame = cv2.resize(frame, SIZE)
-                        cv2.imwrite(frame_url, frame)
+                    # for i in range(counts[_id]):
+                    saved_frames += 1
+                    frame_url = target_folder + '/' + gesture + '/' + video + "_frame_" + str(saved_frames) + ".jpeg"
+                    frame = hs.handsegment(frame)
+                    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                    frame = cv2.resize(frame, SIZE)
+                    cv2.imwrite(frame_url, frame)
 
                 _id += 1
 

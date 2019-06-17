@@ -8,6 +8,7 @@ import tensorflow as tf
 import tflearn
 import numpy as np
 import sys
+from pprint import pprint
 
 from config import *
 
@@ -22,9 +23,9 @@ def load_labels(label_file):
     return label
 
 
-def main(filename, frames, batch_size, num_classes, input_length):
+def main(input_data_dump, num_frames_per_video, batch_size, labels, model_file, is_predict):
     # Get our data.
-    X, Y = get_data(input_data_dump, num_frames_per_video, labels, False, 'test_videos')
+    X, Y = get_data(input_data_dump, num_frames_per_video, labels, False, 'test_videos', is_predict)
 
     num_classes = len(labels)
     size_of_each_frame = X.shape[2]
@@ -44,19 +45,33 @@ def main(filename, frames, batch_size, num_classes, input_length):
         sys.exit()
 
     predictions = model.predict(X)
+
+    if is_predict:
+        print('[MY REALTIME]')
+        pprint(predictions)
+
     predictions = np.array([np.argmax(pred) for pred in predictions])
-    Y = np.array([np.argmax(each) for each in Y])
+
+    if not is_predict:
+        Y = np.array([np.argmax(each) for each in Y])
 
     # Writing predictions and gold labels to file
     rev_labels = dict(zip(list(labels.values()), list(labels.keys())))
     print(rev_labels)
-    with open("result.txt", "w") as f:
-        f.write("gold, pred\n")
-        for a, b in zip(Y, predictions):
-            f.write("%s %s\n" % (rev_labels[a], rev_labels[b]))
 
-    acc = 100 * np.sum(predictions == Y) / len(Y)
-    print("Accuracy: ", acc)
+    if not is_predict:
+        with open("result.txt", "w") as f:
+            f.write("gold, pred\n")
+            for a, b in zip(Y, predictions):
+                f.write("%s %s\n" % (rev_labels[a], rev_labels[b]))
+
+    if not is_predict:
+        acc = 100 * np.sum(predictions == Y) / len(Y)
+        print("Accuracy: ", acc)
+    else:
+        predictions = [rev_labels[prediction] for prediction in predictions]
+        print('[PREDICTION] ', predictions)
+        return predictions
 
 
 if __name__ == '__main__':
@@ -69,8 +84,8 @@ if __name__ == '__main__':
 
     labels = load_labels(args.label_file)
     input_data_dump = args.input_file_dump
-    num_frames_per_video = FRAMES_PER_VIDEO # 201
+    num_frames_per_video = int(FRAMES_PER_VIDEO / batch_size + 1) # 201
     batch_size = args.batch_size
     model_file = args.model_file
 
-    main(input_data_dump, num_frames_per_video, batch_size, labels, model_file)
+    main(input_data_dump, num_frames_per_video, batch_size, labels, model_file, False)

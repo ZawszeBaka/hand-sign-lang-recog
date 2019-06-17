@@ -10,6 +10,11 @@ import pickle
 import sys
 import tensorflow as tf
 from tqdm import tqdm
+import math
+
+from config import *
+
+from pprint import pprint
 
 
 def load_graph(model_file):
@@ -82,30 +87,66 @@ def predict_on_frames(frames_folder, model_file, input_layer, output_layer, batc
     labels_in_dir = os.listdir(frames_folder)
     frames = [each for each in os.walk(frames_folder) if os.path.basename(each[0]) in labels_in_dir]
 
+    for each in frames:
+        print(each[0], len(each[2]))
+        t = np.array([e.split('_frame_')[0] for e in each[2]])
+        t, counts = np.unique( t , return_counts = True)
+        for i in range(len(t)):
+            print(t[i], ':', counts[i])
+
     predictions = []
+
     for each in frames:
         label = each[0]
+
         print("Predicting on frame of %s\n" % (label))
-        for i in tqdm(range(0, len(each[2]), batch_size), ascii=True):
-            batch = each[2][i:i + batch_size]
-            try:
-                batch = [os.path.join(label, frame) for frame in batch]
-                frames_tensors = read_tensor_from_image_file(batch, input_height=input_height, input_width=input_width, input_mean=input_mean, input_std=input_std)
-                pred = predict(graph, frames_tensors, input_layer, output_layer)
-                pred = [[each.tolist(), os.path.basename(label)] for each in pred]
-                predictions.extend(pred)
+        videos_list = np.array([e.split('_frame_')[0] for e in each[2]])
+        unique_videos, counts = np.unique( videos_list , return_counts = True)
+        
+        print('Label: ', label)
+        for i in range(len(unique_videos)):
+            print(unique_videos[i], ':', counts[i])
 
-            except KeyboardInterrupt:
-                print("You quit with ctrl+c")
-                sys.exit()
+        grouped_videos = dict()
+        for unique_video in unique_videos:
+            grouped_videos[unique_video] = []
+        
+        for i in range(len(videos_list)):
+            grouped_videos[videos_list[i]].append(each[2][i])
 
-            except Exception as e:
-                print("Error making prediction: %s" % (e))
-                x = input("\nDo You Want to continue on other samples: y/n")
-                if x.lower() == 'y':
-                    continue
-                else:
+        print('RESULTS')
+        for key in grouped_videos:
+            print(key, ':', len(grouped_videos[key]))
+
+        print('PROCESSING .... \n\n')
+        for key in grouped_videos:
+            count = 0
+            for i in tqdm(range(0, FRAMES_PER_VIDEO, batch_size), ascii=True):
+                batch = grouped_videos[key][i:i + batch_size]
+                try:
+                    batch = [os.path.join(label, frame) for frame in batch]
+                    frames_tensors = read_tensor_from_image_file(batch, input_height=input_height, input_width=input_width, input_mean=input_mean, input_std=input_std)
+                    pred = predict(graph, frames_tensors, input_layer, output_layer)
+                    pred = [[each.tolist(), os.path.basename(label)] for each in pred]
+                    predictions.extend(pred)
+                    count += 1
+
+                except KeyboardInterrupt:
+                    print("You quit with ctrl+c")
                     sys.exit()
+
+                except Exception as e:
+                    print("Error making prediction: %s" % (e))
+                    x = input("\nDo You Want to continue on other samples: y/n")
+                    if x.lower() == 'y':
+                        continue
+                    else:
+                        sys.exit()
+            
+            print(key,':',count)
+            if count != int((FRAMES_PER_VIDEO - 0.0) / batch_size + 1):
+                print('[WARNING] MODEL IS UNSTABLE !!!!!! ')
+
     return predictions
 
 
