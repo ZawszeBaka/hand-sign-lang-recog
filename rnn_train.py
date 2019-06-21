@@ -66,7 +66,7 @@ if __name__ == '__main__':
 
     labels = load_labels(args.label_file)
     input_data_dump = args.input_file_dump
-    num_frames_per_video = int(FRAMES_PER_VIDEO / batch_size + 1) # 201
+    num_frames_per_video = 10 # int(FRAMES_PER_VIDEO / batch_size + 1) # 201
     batch_size = args.batch_size
     model_file = args.model_file
 

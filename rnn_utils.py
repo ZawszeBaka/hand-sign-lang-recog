@@ -19,7 +19,7 @@ def get_data(input_data_dump, num_frames_per_video, labels, ifTrain, gesture_fol
     y = []
     temp_list = deque()
 
-    NUM_DATA_PER_VIDEOS = int(FRAMES_PER_VIDEO / batch_size + 1)
+    NUM_DATA_PER_VIDEOS = 10 # int(FRAMES_PER_VIDEO / batch_size + 1)
 
     # Open and get the features.
     with open(input_data_dump, 'rb') as fin:
@@ -35,7 +35,6 @@ def get_data(input_data_dump, num_frames_per_video, labels, ifTrain, gesture_fol
             print('INIT: save actual', save_actual)
 
         count_frame = 0
-
 
         for i, frame in enumerate(frames):
 
@@ -62,12 +61,13 @@ def get_data(input_data_dump, num_frames_per_video, labels, ifTrain, gesture_fol
                 if type(features) == list:
                     temp_list.append(features)
                 flat = list(temp_list)
-                X.append(np.array(flat))
-                if not is_predict:
-                    print('\n[DEBUG] shape X', np.array(temp_list).shape, ' label', actual)
-                #X.append(np.array(temp_list))
-                # pprint(temp_list)
-                y.append(actual)
+                if len(flat) == NUM_DATA_PER_VIDEOS:
+                    X.append(np.array(flat))
+                    if not is_predict:
+                        print('\n[DEBUG] shape X', np.array(temp_list).shape, ' label', actual)
+                    #X.append(np.array(temp_list))
+                    # pprint(temp_list)
+                    y.append(actual)
             else:
                 if type(features) == list:
                     temp_list.append(features)
